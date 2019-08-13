@@ -88,23 +88,28 @@ void run(benchmark::State& state, ExecutorType* executorPtr, int ti, index_t m,
 
 #ifdef BLAS_VERIFY_BENCHMARK
   // Run a first time with a verification of the results
-  std::vector<scalar_t> v_c_ref = v_c;
-  reference_blas::gemv(t_str, m, n, alpha, m_a.data(), m, v_b.data(), incX,
-                       beta, v_c_ref.data(), incY);
-  std::vector<scalar_t> v_c_temp = v_c;
-  {
-    auto v_c_temp_gpu = blas::make_sycl_iterator_buffer<scalar_t>(v_c_temp, m);
-    auto event = _gemv(ex, *t_str, m, n, alpha, m_a_gpu, m, v_b_gpu, incX, beta,
-                       v_c_temp_gpu, incY);
-    ex.get_policy_handler().wait(event);
-  }
+  try {
+    std::vector<scalar_t> v_c_ref = v_c;
+    reference_blas::gemv(t_str, m, n, alpha, m_a.data(), m, v_b.data(), incX,
+                         beta, v_c_ref.data(), incY);
+    std::vector<scalar_t> v_c_temp = v_c;
+    {
+      auto v_c_temp_gpu = blas::make_sycl_iterator_buffer<scalar_t>(v_c_temp, m);
+      auto event = _gemv(ex, *t_str, m, n, alpha, m_a_gpu, m, v_b_gpu, incX, beta,
+                         v_c_temp_gpu, incY);
+      ex.get_policy_handler().wait(event);
+    }
 
-  std::ostringstream err_stream;
-  if (!utils::compare_vectors<scalar_t>(v_c_temp, v_c_ref, err_stream, "")) {
-    const std::string& err_str = err_stream.str();
-    state.SkipWithError(err_str.c_str());
-    *success = false;
-  };
+    std::ostringstream err_stream;
+    if (!utils::compare_vectors<scalar_t>(v_c_temp, v_c_ref, err_stream, "")) {
+      const std::string& err_str = err_stream.str();
+      state.SkipWithError(err_str.c_str());
+      *success = false;
+    };
+  } catch(cl::sycl::exception& ex) {
+    std::cerr << "Exception occured: " << ex.what() << std::endl;
+    throw;
+  }
 #endif
 
   auto blas_method_def = [&]() -> std::vector<cl::sycl::event> {
