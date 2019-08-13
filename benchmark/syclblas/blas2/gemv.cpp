@@ -88,7 +88,6 @@ void run(benchmark::State& state, ExecutorType* executorPtr, int ti, index_t m,
 
 #ifdef BLAS_VERIFY_BENCHMARK
   // Run a first time with a verification of the results
-  try {
     std::vector<scalar_t> v_c_ref = v_c;
     reference_blas::gemv(t_str, m, n, alpha, m_a.data(), m, v_b.data(), incX,
                          beta, v_c_ref.data(), incY);
@@ -106,10 +105,6 @@ void run(benchmark::State& state, ExecutorType* executorPtr, int ti, index_t m,
       state.SkipWithError(err_str.c_str());
       *success = false;
     };
-  } catch(cl::sycl::exception& ex) {
-    std::cerr << "Exception occured: " << ex.what() << std::endl;
-    throw;
-  }
 #endif
 
   auto blas_method_def = [&]() -> std::vector<cl::sycl::event> {

@@ -10,6 +10,8 @@ std::unique_ptr<utils::cli_device_selector> cdsp;
 void free_device_selector() { cdsp.reset(); }
 
 int main(int argc, char** argv) {
+  try {
+
   // Read the command-line arguments
   auto args = blas_benchmark::utils::parse_args(argc, argv);
 
@@ -54,4 +56,8 @@ int main(int argc, char** argv) {
   benchmark::RunSpecifiedBenchmarks();
 
   return !success;
+  } catch(cl::sycl::exception& ex) {
+    std::cerr << "Exception occured: " << ex.what() << std::endl;
+    return 1;
+  }
 }
